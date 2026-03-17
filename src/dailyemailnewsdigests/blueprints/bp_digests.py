@@ -47,7 +47,7 @@ def _build_html_email(subject: str, date_str: str, sections: List[dict]) -> str:
         "<tr><td style='background-color:#f9f9fb;padding:20px 40px;"
         "border-top:1px solid #eeeeee;'>"
         "<p style='margin:0;font-size:12px;color:#999999;text-align:center;'>"
-        "You received this email because you are subscribed to News Digest."
+        f"You received this email because you are subscribed to {config.DIGEST_NAME}."
         "</p></td></tr></table></td></tr></table></body></html>"
     )
 
@@ -202,9 +202,8 @@ def digest_email(digest_timer: func.TimerRequest) -> None:
 
     # Send one email per recipient with all their sections
     for recipient, sections in recipient_sections.items():
-        now = datetime.now()
-        date_str = now.strftime('%B %d, %Y')
-        full_subject = f"News Digest: {now.strftime('%m/%d/%Y')}"
+        date_str = datetime.now().strftime('%B %d, %Y')
+        full_subject = config.DIGEST_NAME
 
         # Plain text fallback
         text_parts = [f"{full_subject}\n\n"]
