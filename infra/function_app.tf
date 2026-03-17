@@ -16,6 +16,7 @@ resource "azurerm_linux_function_app" "main" {
   }
 
   site_config {
+    always_on = true
     application_stack {
       python_version = "3.12"
     }
