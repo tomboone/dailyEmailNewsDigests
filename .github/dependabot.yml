@@ -1,7 +1,8 @@
 version: 2
 updates:
-  - package-ecosystem: "pip" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  - package-ecosystem: "pip"
+    directory: "/"
+    target-branch: "dependabot-updates"
     schedule:
       interval: "weekly"
       day: "saturday"
@@ -14,11 +15,13 @@ updates:
       python:
         applies-to: version-updates
         update-types:
+          - "major"
           - "minor"
           - "patch"
 
   - package-ecosystem: "github-actions"
     directory: "/.github/workflows"
+    target-branch: "dependabot-updates"
     schedule:
       interval: "weekly"
       day: "saturday"
@@ -31,5 +34,6 @@ updates:
       github-actions:
         applies-to: version-updates
         update-types:
+          - "major"
           - "minor"
           - "patch"

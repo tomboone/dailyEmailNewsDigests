@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  pull_request:
+    branches: ["main", "dependabot-updates"]
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      SENDER: "test@example.com"
+      SMTP_SERVER: "smtp.example.com"
+      SMTP_USER: "testuser"
+      SMTP_PWD: "testpass"
+      AZURE_STORAGE_CONNECTION_STRING: "DefaultEndpointsProtocol=https;AccountName=test"
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - uses: snok/install-poetry@v1
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Ruff lint
+        run: poetry run ruff check .
+
+      - name: Ruff format check
+        run: poetry run ruff format --check .
+
+      - name: Pyright
+        run: poetry run pyright
+
+      - name: Pytest
+        run: poetry run pytest -v
