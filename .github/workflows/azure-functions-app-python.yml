@@ -1,9 +1,12 @@
-#file: noinspection UndefinedAction
+#file: noinspection UndefinedAction,UndefinedParamsPresent
 name: Deploy to Azure Function
 
 on:
   push:
     branches: ["main"]
+
+permissions:
+  contents: read
 
 env:
   AZURE_FUNCTIONAPP_NAME: 'dailyemailnewsdigest'
