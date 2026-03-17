@@ -14,33 +14,72 @@ env:
   PYTHON_VERSION: '3.12'
 
 jobs:
-  build-and-deploy:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      SENDER: "test@example.com"
+      SMTP_SERVER: "smtp.example.com"
+      SMTP_USER: "testuser"
+      SMTP_PWD: "testpass"
+      AZURE_STORAGE_CONNECTION_STRING: "DefaultEndpointsProtocol=https;AccountName=test"
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - uses: snok/install-poetry@v1.4.1
+
+      - name: Cache Poetry virtualenv
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('poetry.lock') }}
+
+      - name: Install dependencies
+        run: |
+          poetry config virtualenvs.in-project true
+          poetry install
+
+      - name: Ruff lint
+        run: poetry run ruff check .
+
+      - name: Ruff format check
+        run: poetry run ruff format --check .
+
+      - name: Pyright
+        run: poetry run pyright
+
+      - name: Pytest
+        run: poetry run pytest -v
+
+  deploy:
+    needs: test
     runs-on: ubuntu-latest
     environment: dev
     steps:
-    - name: 'Checkout GitHub Action'
-      uses: actions/checkout@v6
+      - uses: actions/checkout@v6
 
-    - name: Setup Python ${{ env.PYTHON_VERSION }} Environment
-      uses: actions/setup-python@v6
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
 
-    - name: Install Poetry
-      uses: snok/install-poetry@v1
+      - uses: snok/install-poetry@v1.4.1
 
-    - name: Install poetry-plugin-export
-      run: poetry self add poetry-plugin-export
+      - name: Install poetry-plugin-export
+        run: poetry self add poetry-plugin-export
 
-    - name: Export dependencies to requirements.txt
-      run: poetry export -f requirements.txt --output requirements.txt --without-hashes
+      # Oryx does not support hash-checking, so --without-hashes is required
+      - name: Export dependencies to requirements.txt
+        run: poetry export -f requirements.txt --output requirements.txt --without-hashes
 
-    - name: 'Run Azure Functions Action'
-      uses: Azure/functions-action@v1
-      id: fa
-      with:
-        app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
-        package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-        scm-do-build-during-deployment: true
-        enable-oryx-build: true
+      - name: Deploy to Azure Functions
+        uses: Azure/functions-action@v1
+        id: fa
+        with:
+          app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
+          package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          scm-do-build-during-deployment: true
+          enable-oryx-build: true
