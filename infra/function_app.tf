@@ -22,6 +22,9 @@ resource "azurerm_linux_function_app" "main" {
   }
 
   app_settings = {
+    # Application Insights
+    APPLICATIONINSIGHTS_CONNECTION_STRING = azurerm_application_insights.main.connection_string
+
     # Non-sensitive settings
     DIGEST_NAME       = "Racing News Digest"
     DIGESTS_NCRON     = "0 0 10 * * *"
