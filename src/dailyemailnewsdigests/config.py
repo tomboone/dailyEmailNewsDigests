@@ -11,3 +11,5 @@ SMTP_SERVER: str = os.getenv('SMTP_SERVER')
 SMTP_USER: str = os.getenv('SMTP_USER')
 SMTP_PWD: str = os.getenv('SMTP_PWD')
 SMTP_PORT: int = int(os.getenv('SMTP_PORT', '587'))
+
+DIGEST_NAME: str = os.getenv('DIGEST_NAME', 'News Digest')
