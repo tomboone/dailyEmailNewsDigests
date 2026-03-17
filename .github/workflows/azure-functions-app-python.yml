@@ -1,3 +1,4 @@
+#file: noinspection UndefinedParamsPresent
 name: Deploy to Azure Function
 
 on:
@@ -56,8 +57,6 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     environment: prod
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     permissions:
       contents: read
       id-token: write
@@ -66,7 +65,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: opentofu/setup-opentofu@v1
+      - uses: opentofu/setup-opentofu@v2
         with:
           tofu_version: ${{ env.OPENTOFU_VERSION }}
 
