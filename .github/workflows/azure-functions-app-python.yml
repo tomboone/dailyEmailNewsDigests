@@ -56,6 +56,8 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     environment: prod
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     permissions:
       contents: read
       id-token: write
@@ -69,7 +71,7 @@ jobs:
           tofu_version: ${{ env.OPENTOFU_VERSION }}
 
       - name: Azure Login via OIDC
-        uses: azure/login@v2
+        uses: azure/login@v3
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -136,15 +138,14 @@ jobs:
       - name: Install poetry-plugin-export
         run: poetry self add poetry-plugin-export
 
-      # Oryx does not support hash-checking, so --without-hashes is required
       - name: Export dependencies to requirements.txt
         run: poetry export -f requirements.txt --output requirements.txt --without-hashes
 
-      - name: Verify requirements.txt
-        run: cat requirements.txt
+      - name: Install dependencies for deployment
+        run: pip install --target=".python_packages/lib/site-packages" -r requirements.txt
 
       - name: Azure Login via OIDC
-        uses: azure/login@v2
+        uses: azure/login@v3
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -155,5 +156,3 @@ jobs:
         with:
           app-name: ${{ needs.terraform.outputs.function_app_name }}
           package: '.'
-          scm-do-build-during-deployment: true
-          enable-oryx-build: true

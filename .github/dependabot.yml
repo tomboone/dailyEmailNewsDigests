@@ -15,7 +15,6 @@ updates:
       python:
         applies-to: version-updates
         update-types:
-          - "major"
           - "minor"
           - "patch"
 
@@ -34,6 +33,5 @@ updates:
       github-actions:
         applies-to: version-updates
         update-types:
-          - "major"
           - "minor"
           - "patch"
