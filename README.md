@@ -9,6 +9,7 @@ An Azure Function App that fetches RSS feeds on a schedule and sends a daily ema
 * **Deduplication:** Articles are deduplicated by URL, so the same article from multiple fetches is only included once.
 * **Automatic Cleanup:** Items older than 7 days are automatically removed from storage.
 * **Configurable:** Feed sources, categories, schedules, and email settings are all configurable.
+* **Infrastructure as Code:** Azure resources managed with OpenTofu (Terraform-compatible).
 
 ## Architecture
 
@@ -25,6 +26,8 @@ Two Azure Functions timer triggers:
 * [Poetry](https://python-poetry.org/) for dependency management
 * [Azure Functions Core Tools](https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local)
 * [Azurite](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azurite) for local Azure Storage emulation
+* [OpenTofu](https://opentofu.org/) for infrastructure management
+* [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) for authentication
 
 ### Installation
 
@@ -52,14 +55,14 @@ Two Azure Functions timer triggers:
       "Values": {
         "AzureWebJobsStorage": "UseDevelopmentStorage=true",
         "FUNCTIONS_WORKER_RUNTIME": "python",
-        "WEBSITE_TIME_ZONE": "Eastern Standard Time",
+        "WEBSITE_TIME_ZONE": "America/New_York",
         "SENDER": "sender@example.com",
         "SMTP_SERVER": "smtp.example.com",
         "SMTP_USER": "your_smtp_user",
         "SMTP_PWD": "your_smtp_password",
         "SMTP_PORT": "587",
         "AZURE_STORAGE_CONNECTION_STRING": "UseDevelopmentStorage=true",
-        "DIGEST_NAME": "News Digest"
+        "DIGEST_NAME": "Racing News Digest"
       }
     }
     ```
@@ -85,6 +88,47 @@ poetry run ruff format         # Format code
 poetry run pyright             # Type check
 ```
 
+## Infrastructure
+
+Azure resources are defined in `infra/` using OpenTofu (Terraform-compatible HCL). Manages the resource group, storage account, Key Vault, and Function App. References a pre-existing App Service Plan.
+
+Secrets are stored in Azure Key Vault and referenced by the Function App using [Key Vault references](https://learn.microsoft.com/en-us/azure/app-service/app-service-key-vault-references).
+
+### Setup
+
+```bash
+az login
+cd infra
+tofu init \
+  -backend-config="resource_group_name=<state-rg>" \
+  -backend-config="storage_account_name=<state-storage>" \
+  -backend-config="container_name=<state-container>" \
+  -backend-config="key=dailyemailnewsdigests.tfstate"
+tofu plan
+tofu apply
+```
+
+State is stored in a pre-existing Azure Storage account.
+
+## Deployment
+
+Pushing to `main` triggers a three-stage GitHub Actions pipeline:
+
+1. **Test** — ruff, pyright, pytest
+2. **OpenTofu** — `tofu plan` and `tofu apply` (authenticated via OIDC)
+3. **Deploy** — exports `requirements.txt` from Poetry, deploys to Azure Functions (authenticated via OIDC)
+
+### GitHub Secrets
+
+| Secret | Purpose |
+|---|---|
+| `AZURE_CLIENT_ID` | OIDC app registration client ID |
+| `AZURE_TENANT_ID` | Azure AD tenant ID |
+| `AZURE_SUBSCRIPTION_ID` | Azure subscription ID |
+| `TF_STATE_RESOURCE_GROUP` | Resource group for OpenTofu state storage |
+| `TF_STATE_STORAGE_ACCOUNT` | Storage account for OpenTofu state |
+| `TF_STATE_CONTAINER` | Blob container for OpenTofu state |
+
 ## Configuration
 
 ### Environment Variables
@@ -100,7 +144,9 @@ poetry run pyright             # Type check
 | `DIGESTS_NCRON` | No | `0 0 10 * * *` | Digest email schedule (NCronTab) |
 | `RSS_FETCH_NCRON` | No | `0 */5 * * * *` | RSS fetch schedule (NCronTab) |
 | `DIGEST_NAME` | No | `News Digest` | Email subject and heading |
-| `WEBSITE_TIME_ZONE` | No | UTC | Timezone for schedules (e.g., `Eastern Standard Time`) |
+| `WEBSITE_TIME_ZONE` | No | UTC | Timezone for schedules (e.g., `America/New_York`) |
+
+In production, required variables are managed via Azure Key Vault references (configured in `infra/function_app.tf`).
 
 ### Feed Configuration
 

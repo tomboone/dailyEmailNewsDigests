@@ -44,4 +44,26 @@ Pre-commit hooks run all four automatically on commit.
 
 ## Deployment
 
-Push to `main` triggers GitHub Actions workflow: Poetry exports `requirements.txt`, deploys to Azure Function App `dailyemailnewsdigest` via publish profile. Environment: `dev` (requires approval).
+Push to `main` triggers a three-stage GitHub Actions workflow: test → Terraform → deploy. Authenticated via OIDC (workload identity federation). Environment: `prod` (requires approval).
+
+## Infrastructure
+
+Terraform files in `infra/`. Creates resource group, storage account, Key Vault, and Function App. References an existing App Service Plan via data source.
+
+```bash
+cd infra
+terraform init -backend-config="resource_group_name=..." -backend-config="storage_account_name=..." -backend-config="container_name=..." -backend-config="key=dailyemailnewsdigests.tfstate"
+terraform plan
+terraform validate
+terraform fmt -check -recursive
+```
+
+Secrets managed via Azure Key Vault with Key Vault references in Function App app settings. State stored in a pre-existing Azure Storage account.
+
+### GitHub Secrets (OIDC)
+
+`AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`
+
+### GitHub Secrets (Terraform State)
+
+`TF_STATE_RESOURCE_GROUP`, `TF_STATE_STORAGE_ACCOUNT`, `TF_STATE_CONTAINER`
