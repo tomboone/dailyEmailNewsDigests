@@ -1,18 +1,36 @@
-[project]
+[tool.poetry]
 name = "dailyemailnewsdigests"
 version = "0.1.0"
-description = ""
-authors = [
-    {name = "Tom Boone",email = "tbc@tomboone.com"}
-]
-license = {text = "MIT"}
+description = "Azure Function app that fetches RSS feeds and sends daily email digests"
+authors = ["Tom Boone <tbc@tomboone.com>"]
+license = "MIT"
 readme = "README.md"
-requires-python = ">=3.12"
-dependencies = [
-    "requests (>=2.32.4,<3.0.0)",
-    "azure-functions (>=1.23.0,<2.0.0)"
-]
 
+[tool.poetry.dependencies]
+python = ">=3.12,<4.0"
+azure-functions = ">=1.23.0,<2.0.0"
+azure-data-tables = ">=12.0.0,<13.0.0"
+feedparser = ">=6.0.0,<7.0.0"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "*"
+pyright = "*"
+pytest = "*"
+pytest-mock = "*"
+pre-commit = "*"
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+
+[tool.pyright]
+typeCheckingMode = "standard"
+pythonVersion = "3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

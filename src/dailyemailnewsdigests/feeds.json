@@ -1,0 +1,29 @@
+{
+  "recipient": "rss@notruebill.com",
+  "categories": [
+    {
+      "title": "F1",
+      "feeds": [
+        {"source": "The Race > F1", "url": "https://www.the-race.com/category/formula-1/rss/"},
+        {"source": "Motorsport > F1", "url": "https://www.motorsport.com/rss/f1/news/"},
+        {"source": "Crash > F1", "url": "https://www.crash.net/rss/f1"}
+      ]
+    },
+    {
+      "title": "MotoGP",
+      "feeds": [
+        {"source": "The Race > MotoGP", "url": "https://www.the-race.com/category/motogp/rss/"},
+        {"source": "Motorsport > MotoGP", "url": "https://www.motorsport.com/rss/motogp/news/"},
+        {"source": "Crash > MotoGP", "url": "https://www.crash.net/rss/motogp"}
+      ]
+    },
+    {
+      "title": "INDYCAR",
+      "feeds": [
+        {"source": "The Race > INDYCAR", "url": "https://www.the-race.com/category/indycar/rss/"},
+        {"source": "Motorsport > INDYCAR", "url": "https://www.motorsport.com/rss/indycar/news/"},
+        {"source": "Crash > INDYCAR", "url": "https://www.crash.net/rss/indycar"}
+      ]
+    }
+  ]
+}

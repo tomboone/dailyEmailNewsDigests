@@ -1,8 +1,11 @@
-""" Azure Function for dailyemailnewsdigests """
-import azure.functions as func
-from src.dailyemailnewsdigests.blueprints.bp_digests import bp as bp_digests
+"""Azure Function app entry point for dailyemailnewsdigests."""
 
-# Set a default authentication level for any future HTTP triggers
+import azure.functions as func
+
+from src.dailyemailnewsdigests.blueprints.bp_digests import bp as bp_digests
+from src.dailyemailnewsdigests.blueprints.bp_rss_fetcher import bp as bp_rss_fetcher
+
 app = func.FunctionApp()
 
 app.register_blueprint(bp_digests)
+app.register_blueprint(bp_rss_fetcher)
