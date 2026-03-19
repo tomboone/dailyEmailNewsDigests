@@ -52,12 +52,11 @@ def build_html_email(subject: str, date_str: str, sections: list[dict[str, Any]]
         items: list[dict[str, str]] = section["items"]
 
         parts.append(
-            "<tr><td style='padding:28px 40px 0;'>"
-            f"<h2 style='margin:0 0 4px;font-size:13px;font-weight:700;"
-            f"text-transform:uppercase;letter-spacing:1.2px;color:#6c63ff;'>"
+            "<tr><td style='background-color:#1a1a2e;padding:14px 40px;"
+            "margin-top:0;'>"
+            f"<h2 style='margin:0;font-size:16px;font-weight:700;"
+            f"text-transform:uppercase;letter-spacing:1.5px;color:#ffffff;'>"
             f"{section_title}</h2>"
-            "<hr style='border:none;border-top:2px solid #6c63ff;"
-            "margin:0 0 20px;width:40px;' align='left' />"
             "</td></tr>"
         )
 
