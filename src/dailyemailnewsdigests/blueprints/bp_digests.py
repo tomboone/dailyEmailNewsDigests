@@ -41,7 +41,7 @@ def digest_email(digest_timer: func.TimerRequest) -> None:
             logging.info(f"No unsent items for '{category_title}'. Skipping section.")
             continue
 
-        items.sort(key=lambda x: x.get("published", ""), reverse=True)
+        items.sort(key=lambda x: x.get("published", ""))
         logging.info(f"Found {len(items)} unsent items for '{category_title}'.")
         sections.append({"title": category_title, "items": items})
         all_items.extend(items)
