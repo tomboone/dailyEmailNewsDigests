@@ -21,49 +21,63 @@ def build_html_email(subject: str, date_str: str, sections: list[dict[str, Any]]
     Returns:
         The complete HTML email body.
     """
-    header = (
+    outer_open = (
         "<html><body style='margin:0;padding:0;background-color:#f4f4f7;"
         "font-family:Arial,Helvetica,sans-serif;color:#333333;'>"
         "<table role='presentation' width='100%' cellpadding='0' cellspacing='0' "
         "style='background-color:#f4f4f7;'><tr><td align='center' "
         "style='padding:24px 16px;'>"
+    )
+
+    title_table = (
         "<table role='presentation' width='600' cellpadding='0' cellspacing='0' "
-        "style='background-color:#ffffff;border-radius:8px;overflow:hidden;"
-        "box-shadow:0 1px 3px rgba(0,0,0,0.08);'>"
-        "<tr><td style='background-color:#1a1a2e;padding:32px 40px;'>"
+        "style='background-color:#1a1a2e;border-radius:8px 8px 0 0;overflow:hidden;'>"
+        "<tr><td style='padding:32px 40px;'>"
         f"<h1 style='margin:0;font-size:24px;font-weight:700;color:#ffffff;"
         f"letter-spacing:-0.3px;'>{subject}</h1>"
         f"<p style='margin:6px 0 0;font-size:14px;color:#a0a0b8;'>{date_str}</p>"
-        "</td></tr>"
+        "</td></tr></table>"
     )
 
     footer = (
-        "<tr><td style='background-color:#f9f9fb;padding:20px 40px;"
+        "<table role='presentation' width='600' cellpadding='0' cellspacing='0' "
+        "style='background-color:#f9f9fb;border-radius:0 0 8px 8px;"
         "border-top:1px solid #eeeeee;'>"
+        "<tr><td style='padding:20px 40px;'>"
         "<p style='margin:0;font-size:12px;color:#999999;text-align:center;'>"
         f"You received this email because you are subscribed to {subject}."
-        "</p></td></tr></table></td></tr></table></body></html>"
+        "</p></td></tr></table>"
+        "</td></tr></table></body></html>"
     )
 
-    parts = [header]
+    parts = [outer_open, title_table]
 
     for section in sections:
         section_title = section["title"]
         items: list[dict[str, str]] = section["items"]
 
+        # Category header
         parts.append(
-            "<tr><td style='background-color:#1a1a2e;padding:14px 40px;"
-            "margin-top:0;'>"
+            "<table role='presentation' width='600' cellpadding='0' cellspacing='0' "
+            "style='margin-top:20px;'>"
+            "<tr><td style='background-color:#6c63ff;padding:14px 40px;"
+            "border-radius:8px 8px 0 0;'>"
             f"<h2 style='margin:0;font-size:16px;font-weight:700;"
             f"text-transform:uppercase;letter-spacing:1.5px;color:#ffffff;'>"
             f"{section_title}</h2>"
-            "</td></tr>"
+            "</td></tr></table>"
+        )
+
+        # Items table
+        parts.append(
+            "<table role='presentation' width='600' cellpadding='0' cellspacing='0' "
+            "style='background-color:#ffffff;border-radius:0 0 8px 8px;overflow:hidden;"
+            "box-shadow:0 1px 3px rgba(0,0,0,0.08);'>"
         )
 
         for i, item in enumerate(items):
-            is_first = i == 0
             is_last = i == len(items) - 1
-            padding = "0 40px 20px" if is_first else ("20px 40px 28px" if is_last else "20px 40px")
+            padding = "20px 40px 28px" if is_last else "20px 40px"
 
             parts.append(
                 f"<tr><td style='padding:{padding};'>"
@@ -84,6 +98,8 @@ def build_html_email(subject: str, date_str: str, sections: list[dict[str, Any]]
                     "<hr style='border:none;border-top:1px solid #eeeeee;"
                     "margin:0;' /></td></tr>"
                 )
+
+        parts.append("</table>")
 
     parts.append(footer)
     return "".join(parts)
