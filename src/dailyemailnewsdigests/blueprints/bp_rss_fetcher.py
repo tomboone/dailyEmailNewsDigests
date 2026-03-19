@@ -14,8 +14,8 @@ from src.dailyemailnewsdigests.storage import (
     RssItemEntity,
     delete_old_items,
     get_table_client,
+    insert_new_items,
     make_row_key,
-    upsert_items,
 )
 from src.dailyemailnewsdigests.utils import clean_description, load_feeds
 
@@ -75,6 +75,7 @@ def fetch_rss_feeds(fetch_timer: func.TimerRequest) -> None:
                             description=clean_description(raw_desc, entry_title),
                             published=published_str,
                             fetched_at=now.isoformat(),
+                            sent=False,
                         )
                     )
 
@@ -85,8 +86,11 @@ def fetch_rss_feeds(fetch_timer: func.TimerRequest) -> None:
                 continue
 
         if items:
-            upsert_items(client, items)
-            logging.info(f"Upserted {len(items)} items for '{category_title}'.")
+            new_count = insert_new_items(client, items)
+            logging.info(
+                f"Inserted {new_count} new items for '{category_title}' "
+                f"({len(items) - new_count} already existed)."
+            )
 
     delete_old_items(client)
     logging.info("RSS fetch complete.")

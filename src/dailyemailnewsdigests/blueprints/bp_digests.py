@@ -12,7 +12,7 @@ from src.dailyemailnewsdigests.email_builder import (
     build_plain_text_email,
     send_smtp_email,
 )
-from src.dailyemailnewsdigests.storage import get_table_client, query_recent_items
+from src.dailyemailnewsdigests.storage import get_table_client, mark_items_sent, query_unsent_items
 from src.dailyemailnewsdigests.utils import load_feeds
 
 bp: func.Blueprint = func.Blueprint()
@@ -31,21 +31,23 @@ def digest_email(digest_timer: func.TimerRequest) -> None:
     client = get_table_client()
 
     sections: list[dict[str, Any]] = []
+    all_items: list[dict[str, Any]] = []
 
     for category in feeds_config["categories"]:
         category_title: str = category["title"]
-        items = query_recent_items(client, category_title)
+        items = query_unsent_items(client, category_title)
 
         if not items:
-            logging.info(f"No items for '{category_title}'. Skipping section.")
+            logging.info(f"No unsent items for '{category_title}'. Skipping section.")
             continue
 
         items.sort(key=lambda x: x.get("published", ""), reverse=True)
-        logging.info(f"Found {len(items)} items for '{category_title}'.")
+        logging.info(f"Found {len(items)} unsent items for '{category_title}'.")
         sections.append({"title": category_title, "items": items})
+        all_items.extend(items)
 
     if not sections:
-        logging.info("No items found for any category. No email sent.")
+        logging.info("No unsent items found for any category. No email sent.")
         return
 
     subject = config.DIGEST_NAME
@@ -62,6 +64,7 @@ def digest_email(digest_timer: func.TimerRequest) -> None:
             sender=config.SENDER,
             recipient=recipient,
         )
-        logging.info(f"Successfully sent digest email to {recipient}.")
+        mark_items_sent(client, all_items)
+        logging.info(f"Successfully sent digest email to {recipient} ({len(all_items)} items).")
     except Exception as e:
         logging.error(f"Unable to send digest email to {recipient}: {e}")

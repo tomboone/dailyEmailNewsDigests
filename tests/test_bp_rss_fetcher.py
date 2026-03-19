@@ -34,7 +34,7 @@ def sample_feeds_config() -> dict[str, Any]:
 
 
 @patch("src.dailyemailnewsdigests.blueprints.bp_rss_fetcher.delete_old_items")
-@patch("src.dailyemailnewsdigests.blueprints.bp_rss_fetcher.upsert_items")
+@patch("src.dailyemailnewsdigests.blueprints.bp_rss_fetcher.insert_new_items")
 @patch("src.dailyemailnewsdigests.blueprints.bp_rss_fetcher.get_table_client")
 @patch("src.dailyemailnewsdigests.blueprints.bp_rss_fetcher.feedparser.parse")
 @patch("src.dailyemailnewsdigests.blueprints.bp_rss_fetcher.load_feeds")
@@ -42,7 +42,7 @@ def test_fetch_rss_feeds_stores_items(
     mock_load_feeds: MagicMock,
     mock_parse: MagicMock,
     mock_get_client: MagicMock,
-    mock_upsert: MagicMock,
+    mock_insert: MagicMock,
     mock_delete: MagicMock,
     sample_feeds_config: dict[str, Any],
     sample_feed_entry: dict[str, Any],
@@ -52,6 +52,7 @@ def test_fetch_rss_feeds_stores_items(
         entries=[sample_feed_entry],
         bozo=False,
     )
+    mock_insert.return_value = 1
     mock_client = MagicMock()
     mock_get_client.return_value = mock_client
 
@@ -59,8 +60,8 @@ def test_fetch_rss_feeds_stores_items(
 
     fetch_rss_feeds(MagicMock())
 
-    mock_upsert.assert_called_once()
-    items = mock_upsert.call_args[0][1]
+    mock_insert.assert_called_once()
+    items = mock_insert.call_args[0][1]
     assert len(items) == 1
     assert items[0]["PartitionKey"] == "F1"
     assert items[0]["source"] == "Test Source > F1"
@@ -69,7 +70,7 @@ def test_fetch_rss_feeds_stores_items(
 
 
 @patch("src.dailyemailnewsdigests.blueprints.bp_rss_fetcher.delete_old_items")
-@patch("src.dailyemailnewsdigests.blueprints.bp_rss_fetcher.upsert_items")
+@patch("src.dailyemailnewsdigests.blueprints.bp_rss_fetcher.insert_new_items")
 @patch("src.dailyemailnewsdigests.blueprints.bp_rss_fetcher.get_table_client")
 @patch("src.dailyemailnewsdigests.blueprints.bp_rss_fetcher.feedparser.parse")
 @patch("src.dailyemailnewsdigests.blueprints.bp_rss_fetcher.load_feeds")
@@ -77,7 +78,7 @@ def test_fetch_rss_feeds_continues_on_feed_error(
     mock_load_feeds: MagicMock,
     mock_parse: MagicMock,
     mock_get_client: MagicMock,
-    mock_upsert: MagicMock,
+    mock_insert: MagicMock,
     mock_delete: MagicMock,
     sample_feed_entry: dict[str, Any],
 ) -> None:
@@ -97,19 +98,20 @@ def test_fetch_rss_feeds_continues_on_feed_error(
         MagicMock(bozo=True, bozo_exception=Exception("parse error"), entries=[]),
         MagicMock(bozo=False, entries=[sample_feed_entry]),
     ]
+    mock_insert.return_value = 1
     mock_get_client.return_value = MagicMock()
 
     from src.dailyemailnewsdigests.blueprints.bp_rss_fetcher import fetch_rss_feeds
 
     fetch_rss_feeds(MagicMock())
 
-    mock_upsert.assert_called_once()
-    items = mock_upsert.call_args[0][1]
+    mock_insert.assert_called_once()
+    items = mock_insert.call_args[0][1]
     assert len(items) == 1
 
 
 @patch("src.dailyemailnewsdigests.blueprints.bp_rss_fetcher.delete_old_items")
-@patch("src.dailyemailnewsdigests.blueprints.bp_rss_fetcher.upsert_items")
+@patch("src.dailyemailnewsdigests.blueprints.bp_rss_fetcher.insert_new_items")
 @patch("src.dailyemailnewsdigests.blueprints.bp_rss_fetcher.get_table_client")
 @patch("src.dailyemailnewsdigests.blueprints.bp_rss_fetcher.feedparser.parse")
 @patch("src.dailyemailnewsdigests.blueprints.bp_rss_fetcher.load_feeds")
@@ -117,7 +119,7 @@ def test_fetch_rss_feeds_calls_cleanup(
     mock_load_feeds: MagicMock,
     mock_parse: MagicMock,
     mock_get_client: MagicMock,
-    mock_upsert: MagicMock,
+    mock_insert: MagicMock,
     mock_delete: MagicMock,
     sample_feeds_config: dict[str, Any],
 ) -> None:
