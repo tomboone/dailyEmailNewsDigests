@@ -2,7 +2,7 @@
 
 import logging
 from calendar import timegm
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from time import struct_time
 from typing import cast
 
@@ -34,7 +34,7 @@ def fetch_rss_feeds(fetch_timer: func.TimerRequest) -> None:
     """Timer trigger to fetch RSS feeds and store items in Table Storage."""
     feeds_config = load_feeds()
     client = get_table_client()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     for category in feeds_config["categories"]:
         category_title: str = category["title"]
@@ -57,7 +57,7 @@ def fetch_rss_feeds(fetch_timer: func.TimerRequest) -> None:
                     if hasattr(entry, "published_parsed") and entry.published_parsed:
                         published_dt = datetime.fromtimestamp(
                             timegm(cast(struct_time, entry.published_parsed)),
-                            tz=timezone.utc,
+                            tz=UTC,
                         )
                         published_str = published_dt.isoformat()
 

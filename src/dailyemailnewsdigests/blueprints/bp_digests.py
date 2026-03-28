@@ -1,7 +1,7 @@
 """Blueprint for building and sending daily digest emails."""
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import azure.functions as func
@@ -32,7 +32,7 @@ def digest_email(digest_timer: func.TimerRequest) -> None:
 
     sections: list[dict[str, Any]] = []
     all_items: list[dict[str, Any]] = []
-    cutoff = (datetime.now(timezone.utc) - timedelta(hours=48)).isoformat()
+    cutoff = (datetime.now(UTC) - timedelta(hours=48)).isoformat()
 
     for category in feeds_config["categories"]:
         category_title: str = category["title"]

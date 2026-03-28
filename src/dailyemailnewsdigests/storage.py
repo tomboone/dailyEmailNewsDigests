@@ -2,7 +2,7 @@
 
 import hashlib
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any, TypedDict
 
 from azure.core.exceptions import ResourceExistsError
@@ -64,7 +64,7 @@ def mark_items_sent(client: TableClient, items: list[dict[str, Any]]) -> None:
 
 def delete_old_items(client: TableClient, max_age_days: int = 365) -> None:
     """Delete items older than max_age_days from the table."""
-    cutoff = datetime.now(timezone.utc) - timedelta(days=max_age_days)
+    cutoff = datetime.now(UTC) - timedelta(days=max_age_days)
     all_entities = client.query_entities("")
     deleted = 0
     for entity in all_entities:

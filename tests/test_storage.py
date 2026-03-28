@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock
 
 import pytest
@@ -23,7 +23,7 @@ def _make_entity(
     row_key: str = "abc123",
     fetched_hours_ago: int = 0,
 ) -> dict[str, str]:
-    fetched = datetime.now(timezone.utc) - timedelta(hours=fetched_hours_ago)
+    fetched = datetime.now(UTC) - timedelta(hours=fetched_hours_ago)
     return {
         "PartitionKey": category,
         "RowKey": row_key,
@@ -46,7 +46,7 @@ def test_insert_new_items_creates_new_entities(mock_table_client: MagicMock) -> 
             "link": "https://example.com",
             "description": "Desc",
             "published": "2026-03-17T10:00:00+00:00",
-            "fetched_at": datetime.now(timezone.utc).isoformat(),
+            "fetched_at": datetime.now(UTC).isoformat(),
             "sent": False,
         }
     ]
@@ -66,7 +66,7 @@ def test_insert_new_items_skips_existing(mock_table_client: MagicMock) -> None:
             "link": "https://example.com",
             "description": "Desc",
             "published": "2026-03-17T10:00:00+00:00",
-            "fetched_at": datetime.now(timezone.utc).isoformat(),
+            "fetched_at": datetime.now(UTC).isoformat(),
             "sent": False,
         }
     ]
