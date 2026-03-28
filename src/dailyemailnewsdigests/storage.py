@@ -62,7 +62,7 @@ def mark_items_sent(client: TableClient, items: list[dict[str, Any]]) -> None:
         client.update_entity(item)
 
 
-def delete_old_items(client: TableClient, max_age_days: int = 7) -> None:
+def delete_old_items(client: TableClient, max_age_days: int = 365) -> None:
     """Delete items older than max_age_days from the table."""
     cutoff = datetime.now(timezone.utc) - timedelta(days=max_age_days)
     all_entities = client.query_entities("")

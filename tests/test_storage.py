@@ -97,10 +97,10 @@ def test_mark_items_sent_updates_entities(mock_table_client: MagicMock) -> None:
 
 
 def test_delete_old_items_deletes_expired(mock_table_client: MagicMock) -> None:
-    old = _make_entity(fetched_hours_ago=200)
+    old = _make_entity(fetched_hours_ago=365 * 24 + 1)
     mock_table_client.query_entities.return_value = [old]
 
-    delete_old_items(mock_table_client, max_age_days=7)
+    delete_old_items(mock_table_client, max_age_days=365)
     mock_table_client.delete_entity.assert_called_once()
 
 
@@ -108,5 +108,5 @@ def test_delete_old_items_keeps_recent(mock_table_client: MagicMock) -> None:
     recent = _make_entity(fetched_hours_ago=1)
     mock_table_client.query_entities.return_value = [recent]
 
-    delete_old_items(mock_table_client, max_age_days=7)
+    delete_old_items(mock_table_client, max_age_days=365)
     mock_table_client.delete_entity.assert_not_called()

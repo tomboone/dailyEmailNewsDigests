@@ -1,4 +1,5 @@
-from unittest.mock import MagicMock, patch
+from datetime import datetime, timedelta, timezone
+from unittest.mock import MagicMock, call, patch
 
 
 @patch("src.dailyemailnewsdigests.blueprints.bp_digests.mark_items_sent")
@@ -36,8 +37,8 @@ def test_digest_email_sends_email(
             "title": "Test Article",
             "link": "https://example.com/article",
             "description": "A test description",
-            "published": "2026-03-17T10:00:00+00:00",
-            "fetched_at": "2026-03-17T09:00:00+00:00",
+            "published": datetime.now(timezone.utc).isoformat(),
+            "fetched_at": datetime.now(timezone.utc).isoformat(),
             "sent": False,
         }
     ]
@@ -117,8 +118,8 @@ def test_digest_email_does_not_mark_sent_on_failure(
             "title": "Article",
             "link": "https://example.com/article",
             "description": "Desc",
-            "published": "2026-03-17T10:00:00+00:00",
-            "fetched_at": "2026-03-17T09:00:00+00:00",
+            "published": datetime.now(timezone.utc).isoformat(),
+            "fetched_at": datetime.now(timezone.utc).isoformat(),
             "sent": False,
         }
     ]
@@ -131,3 +132,66 @@ def test_digest_email_does_not_mark_sent_on_failure(
     digest_email(MagicMock())
 
     mock_mark_sent.assert_not_called()
+
+
+@patch("src.dailyemailnewsdigests.blueprints.bp_digests.mark_items_sent")
+@patch("src.dailyemailnewsdigests.blueprints.bp_digests.send_smtp_email")
+@patch("src.dailyemailnewsdigests.blueprints.bp_digests.build_html_email")
+@patch("src.dailyemailnewsdigests.blueprints.bp_digests.build_plain_text_email")
+@patch("src.dailyemailnewsdigests.blueprints.bp_digests.query_unsent_items")
+@patch("src.dailyemailnewsdigests.blueprints.bp_digests.get_table_client")
+@patch("src.dailyemailnewsdigests.blueprints.bp_digests.load_feeds")
+def test_digest_email_marks_stale_items_as_sent(
+    mock_load_feeds: MagicMock,
+    mock_get_client: MagicMock,
+    mock_query: MagicMock,
+    mock_plain: MagicMock,
+    mock_html: MagicMock,
+    mock_send: MagicMock,
+    mock_mark_sent: MagicMock,
+) -> None:
+    mock_load_feeds.return_value = {
+        "recipient": "test@example.com",
+        "categories": [
+            {
+                "title": "F1",
+                "feeds": [{"source": "Test", "url": "https://example.com/rss"}],
+            }
+        ],
+    }
+    mock_client = MagicMock()
+    mock_get_client.return_value = mock_client
+    stale_item = {
+        "PartitionKey": "F1",
+        "RowKey": "stale123",
+        "source": "Test",
+        "title": "Old Article",
+        "link": "https://example.com/old",
+        "description": "Stale desc",
+        "published": (datetime.now(timezone.utc) - timedelta(hours=72)).isoformat(),
+        "fetched_at": (datetime.now(timezone.utc) - timedelta(hours=72)).isoformat(),
+        "sent": False,
+    }
+    recent_item = {
+        "PartitionKey": "F1",
+        "RowKey": "recent123",
+        "source": "Test",
+        "title": "New Article",
+        "link": "https://example.com/new",
+        "description": "Recent desc",
+        "published": datetime.now(timezone.utc).isoformat(),
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "sent": False,
+    }
+    mock_query.return_value = [stale_item, recent_item]
+    mock_html.return_value = "<html>test</html>"
+    mock_plain.return_value = "plain text"
+
+    from src.dailyemailnewsdigests.blueprints.bp_digests import digest_email
+
+    digest_email(MagicMock())
+
+    mock_send.assert_called_once()
+    assert mock_mark_sent.call_count == 2
+    mock_mark_sent.assert_any_call(mock_client, [stale_item])
+    mock_mark_sent.assert_any_call(mock_client, [recent_item])

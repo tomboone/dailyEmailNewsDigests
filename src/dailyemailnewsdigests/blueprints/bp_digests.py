@@ -1,7 +1,7 @@
 """Blueprint for building and sending daily digest emails."""
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import azure.functions as func
@@ -32,10 +32,16 @@ def digest_email(digest_timer: func.TimerRequest) -> None:
 
     sections: list[dict[str, Any]] = []
     all_items: list[dict[str, Any]] = []
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=48)).isoformat()
 
     for category in feeds_config["categories"]:
         category_title: str = category["title"]
-        items = query_unsent_items(client, category_title)
+        all_unsent = query_unsent_items(client, category_title)
+        stale = [i for i in all_unsent if i.get("published", "") < cutoff]
+        if stale:
+            mark_items_sent(client, stale)
+            logging.info(f"Marked {len(stale)} stale items as sent for '{category_title}'.")
+        items = [i for i in all_unsent if i.get("published", "") >= cutoff]
 
         if not items:
             logging.info(f"No unsent items for '{category_title}'. Skipping section.")
