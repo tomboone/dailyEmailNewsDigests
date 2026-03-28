@@ -1,3 +1,7 @@
+[project]
+name = "dailyemailnewsdigests"
+requires-python = ">=3.12"
+
 [tool.poetry]
 name = "dailyemailnewsdigests"
 version = "0.1.0"

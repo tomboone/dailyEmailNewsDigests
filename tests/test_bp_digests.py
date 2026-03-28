@@ -1,5 +1,5 @@
-from datetime import datetime, timedelta, timezone
-from unittest.mock import MagicMock, call, patch
+from datetime import UTC, datetime, timedelta
+from unittest.mock import MagicMock, patch
 
 
 @patch("src.dailyemailnewsdigests.blueprints.bp_digests.mark_items_sent")
@@ -37,8 +37,8 @@ def test_digest_email_sends_email(
             "title": "Test Article",
             "link": "https://example.com/article",
             "description": "A test description",
-            "published": datetime.now(timezone.utc).isoformat(),
-            "fetched_at": datetime.now(timezone.utc).isoformat(),
+            "published": datetime.now(UTC).isoformat(),
+            "fetched_at": datetime.now(UTC).isoformat(),
             "sent": False,
         }
     ]
@@ -118,8 +118,8 @@ def test_digest_email_does_not_mark_sent_on_failure(
             "title": "Article",
             "link": "https://example.com/article",
             "description": "Desc",
-            "published": datetime.now(timezone.utc).isoformat(),
-            "fetched_at": datetime.now(timezone.utc).isoformat(),
+            "published": datetime.now(UTC).isoformat(),
+            "fetched_at": datetime.now(UTC).isoformat(),
             "sent": False,
         }
     ]
@@ -168,8 +168,8 @@ def test_digest_email_marks_stale_items_as_sent(
         "title": "Old Article",
         "link": "https://example.com/old",
         "description": "Stale desc",
-        "published": (datetime.now(timezone.utc) - timedelta(hours=72)).isoformat(),
-        "fetched_at": (datetime.now(timezone.utc) - timedelta(hours=72)).isoformat(),
+        "published": (datetime.now(UTC) - timedelta(hours=72)).isoformat(),
+        "fetched_at": (datetime.now(UTC) - timedelta(hours=72)).isoformat(),
         "sent": False,
     }
     recent_item = {
@@ -179,8 +179,8 @@ def test_digest_email_marks_stale_items_as_sent(
         "title": "New Article",
         "link": "https://example.com/new",
         "description": "Recent desc",
-        "published": datetime.now(timezone.utc).isoformat(),
-        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "published": datetime.now(UTC).isoformat(),
+        "fetched_at": datetime.now(UTC).isoformat(),
         "sent": False,
     }
     mock_query.return_value = [stale_item, recent_item]
