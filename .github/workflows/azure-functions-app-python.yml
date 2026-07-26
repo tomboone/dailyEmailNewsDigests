@@ -1,4 +1,4 @@
-#file: noinspection UndefinedAction,UndefinedParamsPresent
+#file: noinspection UndefinedParamsPresent
 name: Deploy to Azure Function
 
 on:
@@ -9,14 +9,18 @@ permissions:
   contents: read
 
 env:
-  AZURE_FUNCTIONAPP_NAME: 'dailyemailnewsdigest'
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.'
   PYTHON_VERSION: '3.12'
+  OPENTOFU_VERSION: '1.9'
 
 jobs:
-  build-and-deploy:
+  test:
     runs-on: ubuntu-latest
-    environment: dev
+    env:
+      SENDER: "test@example.com"
+      SMTP_SERVER: "smtp.example.com"
+      SMTP_USER: "testuser"
+      SMTP_PWD: "testpass"
+      AZURE_STORAGE_CONNECTION_STRING: "DefaultEndpointsProtocol=https;AccountName=test"
     steps:
     - name: 'Checkout GitHub Action'
       uses: actions/checkout@v7
