@@ -24,34 +24,26 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v7
+      # Python comes from .python-version: uv reads it when it syncs.
+      - uses: astral-sh/setup-uv@v10.3.3
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - uses: snok/install-poetry@v1.4.1
-
-      - name: Cache Poetry virtualenv
-        uses: actions/cache@v6
-        with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('poetry.lock') }}
+          enable-cache: true
+          cache-dependency-glob: uv.lock
 
       - name: Install dependencies
-        run: |
-          poetry config virtualenvs.in-project true
-          poetry install
+        run: uv sync --locked
 
       - name: Ruff lint
-        run: poetry run ruff check .
+        run: uv run ruff check .
 
       - name: Ruff format check
-        run: poetry run ruff format --check .
+        run: uv run ruff format --check .
 
       - name: Pyright
-        run: poetry run pyright
+        run: uv run pyright
 
       - name: Pytest
-        run: poetry run pytest -v
+        run: uv run pytest -v
 
   terraform:
     needs: test
@@ -128,17 +120,17 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # pip below vendors packages for the Functions runtime, so it needs a system Python that
+      # matches the app's runtime (python_version in infra/function_app.tf), not just uv's.
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - uses: snok/install-poetry@v1.4.1
+      - uses: astral-sh/setup-uv@v10.3.3
 
-      - name: Install poetry-plugin-export
-        run: poetry self add poetry-plugin-export
-
+      # Runtime dependencies only: no dev group, and no editable entry for the project itself.
       - name: Export dependencies to requirements.txt
-        run: poetry export -f requirements.txt --output requirements.txt --without-hashes
+        run: uv export --locked --format requirements-txt --no-dev --no-emit-project --no-hashes --output-file requirements.txt
 
       - name: Install dependencies for deployment
         run: pip install --target=".python_packages/lib/site-packages" -r requirements.txt

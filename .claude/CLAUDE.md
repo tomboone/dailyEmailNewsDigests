@@ -19,13 +19,14 @@ Shared modules under `src/dailyemailnewsdigests/`:
 ## Commands
 
 ```bash
-poetry run pytest              # Run tests
-poetry run ruff check --fix    # Lint
-poetry run ruff format         # Format
-poetry run pyright             # Type check
+uv sync                    # Install (dev group included)
+uv run pytest              # Run tests
+uv run ruff check --fix    # Lint
+uv run ruff format         # Format
+uv run pyright             # Type check
 ```
 
-Pre-commit hooks run all four automatically on commit.
+Pre-commit hooks run the four checks automatically on commit.
 
 ## Conventions
 
