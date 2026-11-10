@@ -1,0 +1,7 @@
+# Test-only values, loaded into the python job's environment. Never secrets.
+# config.py requires these at import time; the tests mock SMTP and Table Storage.
+SENDER=test@example.com
+SMTP_SERVER=smtp.example.com
+SMTP_USER=testuser
+SMTP_PWD=testpass
+AZURE_STORAGE_CONNECTION_STRING="DefaultEndpointsProtocol=https;AccountName=test"

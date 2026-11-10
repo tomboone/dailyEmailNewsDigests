@@ -1,41 +1,29 @@
-name: CI
+name: ci
 
 on:
   pull_request:
-    branches: ["main", "dependabot-updates"]
+  push:
+    branches: [main]
+
+# A newer push to a PR cancels its older run; runs on main are never cancelled.
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
 
 jobs:
-  test:
+  # uv sync, ruff check, ruff format --check, pyright, pytest. Scope and options live in pyproject.toml;
+  # the test env comes from .github/ci/env. No image: this is an Azure Functions app.
+  python:
+    uses: neuroticsasquat-ch/workflows/.github/workflows/python.yml@v1
+
+  ci: # the one required check; the name is the contract
+    if: always()
+    needs: [python] # every other job, extras included
     runs-on: ubuntu-latest
-    env:
-      SENDER: "test@example.com"
-      SMTP_SERVER: "smtp.example.com"
-      SMTP_USER: "testuser"
-      SMTP_PWD: "testpass"
-      AZURE_STORAGE_CONNECTION_STRING: "DefaultEndpointsProtocol=https;AccountName=test"
     steps:
-      - uses: actions/checkout@v7
-
-      # Python comes from .python-version: uv reads it when it syncs.
-      - uses: astral-sh/setup-uv@v10.3.3
+      - uses: neuroticsasquat-ch/workflows/actions/gate@v1
         with:
-          enable-cache: true
-          cache-dependency-glob: uv.lock
-
-      - name: Install dependencies
-        run: uv sync --locked
-
-      - name: Ruff lint
-        run: uv run ruff check .
-
-      - name: Ruff format check
-        run: uv run ruff format --check .
-
-      - name: Pyright
-        run: uv run pyright
-
-      - name: Pytest
-        run: uv run pytest -v
+          needs: ${{ toJSON(needs) }}
