@@ -1,9 +1,20 @@
 #file: noinspection UndefinedParamsPresent
 name: Deploy to Azure Function
 
+# Runs after the `ci` workflow succeeds on a push to main, so a deploy only ever follows the
+# shared checks (ci.yml). Kept as its own workflow rather than jobs in ci.yml so the Azure OIDC
+# grant (`id-token: write`) and the Azure secrets never sit in a workflow that runs on every PR.
 on:
-  push:
-    branches: ["main"]
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
+
+# Merges in quick succession (an auto-promoted dependency batch, say) queue here instead of racing
+# for the Tofu state lock. A running deploy is never cancelled.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -13,40 +24,9 @@ env:
   OPENTOFU_VERSION: '1.9'
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    env:
-      SENDER: "test@example.com"
-      SMTP_SERVER: "smtp.example.com"
-      SMTP_USER: "testuser"
-      SMTP_PWD: "testpass"
-      AZURE_STORAGE_CONNECTION_STRING: "DefaultEndpointsProtocol=https;AccountName=test"
-    steps:
-      - uses: actions/checkout@v7
-
-      # Python comes from .python-version: uv reads it when it syncs.
-      - uses: astral-sh/setup-uv@v10.3.3
-        with:
-          enable-cache: true
-          cache-dependency-glob: uv.lock
-
-      - name: Install dependencies
-        run: uv sync --locked
-
-      - name: Ruff lint
-        run: uv run ruff check .
-
-      - name: Ruff format check
-        run: uv run ruff format --check .
-
-      - name: Pyright
-        run: uv run pyright
-
-      - name: Pytest
-        run: uv run pytest -v
-
   terraform:
-    needs: test
+    # A push run, not a PR run whose head branch happens to be named main.
+    if: github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     environment: prod
     permissions:
@@ -55,7 +35,11 @@ jobs:
     outputs:
       function_app_name: ${{ steps.tf-output.outputs.function_app_name }}
     steps:
+      # The commit ci passed on. A workflow_run's own SHA is main's tip when it fires, which can be
+      # a later push whose ci hasn't finished, or failed.
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - uses: opentofu/setup-opentofu@v2
         with:
@@ -118,7 +102,11 @@ jobs:
       contents: read
       id-token: write
     steps:
+      # The commit ci passed on. A workflow_run's own SHA is main's tip when it fires, which can be
+      # a later push whose ci hasn't finished, or failed.
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       # pip below vendors packages for the Functions runtime, so it needs a system Python that
       # matches the app's runtime (python_version in infra/function_app.tf), not just uv's.

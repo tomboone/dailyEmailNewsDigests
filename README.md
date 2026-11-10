@@ -111,11 +111,21 @@ State is stored in a pre-existing Azure Storage account.
 
 ## Deployment
 
-Pushing to `main` triggers a three-stage GitHub Actions pipeline:
+CI (`.github/workflows/ci.yml`) calls the shared `neuroticsasquat-ch/workflows` Python workflow — ruff,
+pyright and pytest, with the test env from `.github/ci/env` — on every PR and on push to `main`. Its `ci`
+job is the one required check.
 
-1. **Test** — ruff, pyright, pytest
-2. **OpenTofu** — `tofu plan` and `tofu apply` (authenticated via OIDC)
-3. **Deploy** — exports `requirements.txt` from `uv.lock`, deploys to Azure Functions (authenticated via OIDC)
+When `ci` succeeds on a push to `main`, the deploy workflow runs in two stages:
+
+1. **OpenTofu** — `tofu plan` and `tofu apply` (authenticated via OIDC)
+2. **Deploy** — exports `requirements.txt` from `uv.lock`, deploys to Azure Functions (authenticated via OIDC)
+
+### Dependency updates
+
+Dependabot opens its weekly PRs (Saturday 09:00 ET) against `updates/dependencies`.
+`.github/workflows/dependencies.yml` auto-merges them once `ci` is green, keeps that branch synced with
+`main`, and promotes it to `main` inside the Saturday window. Majors, red CI and conflicts are held for a
+person.
 
 ### GitHub Secrets
 

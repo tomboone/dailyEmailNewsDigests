@@ -45,7 +45,9 @@ Pre-commit hooks run the four checks automatically on commit.
 
 ## Deployment
 
-Push to `main` triggers a three-stage GitHub Actions workflow: test → Terraform → deploy. Authenticated via OIDC (workload identity federation). Environment: `prod` (requires approval).
+CI (`ci.yml`) calls the shared `neuroticsasquat-ch/workflows` `python.yml@v1` on every PR and on push to `main`; its test env lives in `.github/ci/env`, and its `ci` job is the one required check. When `ci` succeeds on a push to `main`, `azure-functions-app-python.yml` runs Terraform → deploy. Authenticated via OIDC (workload identity federation). Environment: `prod` (requires approval).
+
+Dependabot targets `updates/dependencies`; `dependencies.yml` (shared `dependency-branch.yml`, `auto-promote: true`) auto-merges its PRs and promotes the branch to `main`. Needs the `AUTOMATION_APP_PRIVATE_KEY` repo secret.
 
 ## Infrastructure
 
