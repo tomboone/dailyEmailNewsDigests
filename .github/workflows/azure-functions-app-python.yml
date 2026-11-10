@@ -1,9 +1,20 @@
 #file: noinspection UndefinedParamsPresent
 name: Deploy to Azure Function
 
+# Runs after the `ci` workflow succeeds on a push to main, so a deploy only ever follows the
+# shared checks (ci.yml). Kept as its own workflow rather than jobs in ci.yml so the Azure OIDC
+# grant (`id-token: write`) and the Azure secrets never sit in a workflow that runs on every PR.
 on:
-  push:
-    branches: ["main"]
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
+
+# Merges in quick succession (an auto-promoted dependency batch, say) queue here instead of racing
+# for the Tofu state lock. A running deploy is never cancelled.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -13,48 +24,9 @@ env:
   OPENTOFU_VERSION: '1.9'
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    env:
-      SENDER: "test@example.com"
-      SMTP_SERVER: "smtp.example.com"
-      SMTP_USER: "testuser"
-      SMTP_PWD: "testpass"
-      AZURE_STORAGE_CONNECTION_STRING: "DefaultEndpointsProtocol=https;AccountName=test"
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-python@v7
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - uses: snok/install-poetry@v1.4.1
-
-      - name: Cache Poetry virtualenv
-        uses: actions/cache@v6
-        with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('poetry.lock') }}
-
-      - name: Install dependencies
-        run: |
-          poetry config virtualenvs.in-project true
-          poetry install
-
-      - name: Ruff lint
-        run: poetry run ruff check .
-
-      - name: Ruff format check
-        run: poetry run ruff format --check .
-
-      - name: Pyright
-        run: poetry run pyright
-
-      - name: Pytest
-        run: poetry run pytest -v
-
   terraform:
-    needs: test
+    # A push run, not a PR run whose head branch happens to be named main.
+    if: github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     environment: prod
     permissions:
@@ -63,7 +35,11 @@ jobs:
     outputs:
       function_app_name: ${{ steps.tf-output.outputs.function_app_name }}
     steps:
+      # The commit ci passed on. A workflow_run's own SHA is main's tip when it fires, which can be
+      # a later push whose ci hasn't finished, or failed.
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - uses: opentofu/setup-opentofu@v2
         with:
@@ -126,19 +102,23 @@ jobs:
       contents: read
       id-token: write
     steps:
+      # The commit ci passed on. A workflow_run's own SHA is main's tip when it fires, which can be
+      # a later push whose ci hasn't finished, or failed.
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
+      # pip below vendors packages for the Functions runtime, so it needs a system Python that
+      # matches the app's runtime (python_version in infra/function_app.tf), not just uv's.
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - uses: snok/install-poetry@v1.4.1
+      - uses: astral-sh/setup-uv@v10.3.3
 
-      - name: Install poetry-plugin-export
-        run: poetry self add poetry-plugin-export
-
+      # Runtime dependencies only: no dev group, and no editable entry for the project itself.
       - name: Export dependencies to requirements.txt
-        run: poetry export -f requirements.txt --output requirements.txt --without-hashes
+        run: uv export --locked --format requirements-txt --no-dev --no-emit-project --no-hashes --output-file requirements.txt
 
       - name: Install dependencies for deployment
         run: pip install --target=".python_packages/lib/site-packages" -r requirements.txt

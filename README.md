@@ -23,7 +23,7 @@ Two Azure Functions timer triggers:
 ### Prerequisites
 
 * Python 3.12
-* [Poetry](https://python-poetry.org/) for dependency management
+* [uv](https://docs.astral.sh/uv/) for dependency management
 * [Azure Functions Core Tools](https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local)
 * [Azurite](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azurite) for local Azure Storage emulation
 * [OpenTofu](https://opentofu.org/) for infrastructure management
@@ -39,13 +39,12 @@ Two Azure Functions timer triggers:
 
 2. **Install dependencies:**
     ```bash
-    poetry config virtualenvs.in-project true
-    poetry install
+    uv sync
     ```
 
 3. **Install pre-commit hooks:**
     ```bash
-    poetry run pre-commit install
+    uv run pre-commit install
     ```
 
 4. **Configure local settings:** Create a `local.settings.json` file in the project root (ignored by Git):
@@ -82,10 +81,10 @@ Two Azure Functions timer triggers:
 ### Development
 
 ```bash
-poetry run pytest              # Run tests
-poetry run ruff check --fix    # Lint and auto-fix
-poetry run ruff format         # Format code
-poetry run pyright             # Type check
+uv run pytest              # Run tests
+uv run ruff check --fix    # Lint and auto-fix
+uv run ruff format         # Format code
+uv run pyright             # Type check
 ```
 
 ## Infrastructure
@@ -112,11 +111,21 @@ State is stored in a pre-existing Azure Storage account.
 
 ## Deployment
 
-Pushing to `main` triggers a three-stage GitHub Actions pipeline:
+CI (`.github/workflows/ci.yml`) calls the shared `neuroticsasquat-ch/workflows` Python workflow — ruff,
+pyright and pytest, with the test env from `.github/ci/env` — on every PR and on push to `main`. Its `ci`
+job is the one required check.
 
-1. **Test** — ruff, pyright, pytest
-2. **OpenTofu** — `tofu plan` and `tofu apply` (authenticated via OIDC)
-3. **Deploy** — exports `requirements.txt` from Poetry, deploys to Azure Functions (authenticated via OIDC)
+When `ci` succeeds on a push to `main`, the deploy workflow runs in two stages:
+
+1. **OpenTofu** — `tofu plan` and `tofu apply` (authenticated via OIDC)
+2. **Deploy** — exports `requirements.txt` from `uv.lock`, deploys to Azure Functions (authenticated via OIDC)
+
+### Dependency updates
+
+Dependabot opens its weekly PRs (Saturday 09:00 ET) against `updates/dependencies`.
+`.github/workflows/dependencies.yml` auto-merges them once `ci` is green, keeps that branch synced with
+`main`, and promotes it to `main` inside the Saturday window. Majors, red CI and conflicts are held for a
+person.
 
 ### GitHub Secrets
 
