@@ -114,7 +114,7 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - uses: astral-sh/setup-uv@v10.3.3
+      - uses: astral-sh/setup-uv@v10.4.0
 
       # Runtime dependencies only: no dev group, and no editable entry for the project itself.
       - name: Export dependencies to requirements.txt
