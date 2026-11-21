@@ -4,6 +4,10 @@ resource "azurerm_key_vault" "main" {
   location            = azurerm_resource_group.main.location
   tenant_id           = data.azurerm_client_config.current.tenant_id
   sku_name            = "standard"
+
+  # Access policies (azurerm_key_vault_access_policy), not Azure RBAC. azurerm 5.x requires the
+  # choice to be explicit.
+  rbac_authorization_enabled = false
 }
 
 # Access policy for the Terraform service principal
