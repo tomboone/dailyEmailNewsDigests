@@ -1,0 +1,73 @@
+name: tofu-lock
+
+# Dependabot bumps provider constraints in infra/*.tf but leaves infra/.terraform.lock.hcl alone:
+# its entries are keyed to registry.opentofu.org. A stale lock fails `tofu init`, so this
+# regenerates it on Dependabot's PR and pushes it back. The push is made as the automation app,
+# not GITHUB_TOKEN, so `ci` runs again on the new head. The infra job in ci.yml is the gate: a bump
+# the config doesn't survive stays red, and dependencies.yml leaves it for a person.
+on:
+  pull_request:
+    paths: ['infra/**']
+
+concurrency:
+  group: tofu-lock-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  OPENTOFU_VERSION: '1.9' # OPENTOFU_VERSION in azure-functions-app-python.yml
+
+jobs:
+  lock:
+    # Dependabot's PRs only, and only its branches in this repo. A person runs `tofu init -upgrade`
+    # themselves, and ci.yml fails their PR if they forget.
+    if: >-
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      # On a run Dependabot triggered, secrets come from the Dependabot store, so the key has to be
+      # there as well as in the Actions store (where the app's own push finds it).
+      - id: app
+        uses: actions/create-github-app-token@v3.3.0
+        with:
+          client-id: Iv23li9H17twmhg3CZou # the automation app, as in dependency-branch.yml. Public.
+          private-key: ${{ secrets.AUTOMATION_APP_PRIVATE_KEY }}
+
+      # The PR's branch, not the merge ref, so the commit lands on it. The app's token stays in the
+      # clone's git config for the push.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ steps.app.outputs.token }}
+
+      - uses: opentofu/setup-opentofu@v2
+        with:
+          tofu_version: ${{ env.OPENTOFU_VERSION }}
+          tofu_wrapper: false
+
+      # -upgrade selects the newest version the bumped constraint allows. `providers lock` then
+      # records hashes for CI's platform and a Mac's, so a local `tofu init` accepts the lock too.
+      - name: Regenerate the lock file
+        working-directory: infra
+        run: |
+          tofu init -backend=false -input=false -upgrade
+          tofu providers lock -platform=linux_amd64 -platform=darwin_arm64
+
+      - name: Commit and push it
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          SLUG: ${{ steps.app.outputs.app-slug }}
+        run: |
+          if git diff --quiet -- infra/.terraform.lock.hcl; then
+            echo "The lock file already matches the constraints."
+            exit 0
+          fi
+          id=$(gh api "users/${SLUG}%5Bbot%5D" --jq .id)
+          git config user.name "${SLUG}[bot]"
+          git config user.email "${id}+${SLUG}[bot]@users.noreply.github.com"
+          git add infra/.terraform.lock.hcl
+          git commit -m "chore: refresh infra/.terraform.lock.hcl"
+          git push

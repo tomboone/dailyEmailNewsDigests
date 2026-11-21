@@ -112,8 +112,9 @@ State is stored in a pre-existing Azure Storage account.
 ## Deployment
 
 CI (`.github/workflows/ci.yml`) calls the shared `neuroticsasquat-ch/workflows` Python workflow — ruff,
-pyright and pytest, with the test env from `.github/ci/env` — on every PR and on push to `main`. Its `ci`
-job is the one required check.
+pyright and pytest, with the test env from `.github/ci/env` — on every PR and on push to `main` — plus an
+`infra` job: `tofu fmt -check`, `tofu init -backend=false -lockfile=readonly` and `tofu validate`. Its
+`ci` job is the one required check.
 
 When `ci` succeeds on a push to `main`, the deploy workflow runs in two stages:
 
@@ -127,6 +128,12 @@ Dependabot opens its weekly PRs (Saturday 09:00 ET) against `updates/dependencie
 `main`, and promotes it to `main` inside the Saturday window. Majors, red CI and conflicts are held for a
 person.
 
+Dependabot bumps provider constraints in `infra/` but can't refresh `infra/.terraform.lock.hcl`, whose
+entries are keyed to `registry.opentofu.org`. `.github/workflows/tofu-lock.yml` regenerates it on
+Dependabot's PR and pushes it back as the automation app, so `ci` reruns on the new head. A provider
+bump the config doesn't survive then fails `ci`'s `infra` job and is left for a person. When you change
+`infra/` yourself, run `tofu init -upgrade` and commit the lock file.
+
 ### GitHub Secrets
 
 | Secret | Purpose |
@@ -137,6 +144,7 @@ person.
 | `TF_STATE_RESOURCE_GROUP` | Resource group for OpenTofu state storage |
 | `TF_STATE_STORAGE_ACCOUNT` | Storage account for OpenTofu state |
 | `TF_STATE_CONTAINER` | Blob container for OpenTofu state |
+| `AUTOMATION_APP_PRIVATE_KEY` | Automation app key for `dependencies.yml` and `tofu-lock.yml`. Needed in **both** the Actions and the Dependabot secret stores: a run Dependabot triggers only sees the latter |
 
 ## Configuration
 

@@ -5,7 +5,21 @@ provider "registry.opentofu.org/hashicorp/azurerm" {
   version     = "4.64.0"
   constraints = "~> 4.0"
   hashes = [
+    "h1:0z5mfEgAyOiY1jS69Iwaeb9u0cJ8eOhio+XdoK0SM2k=",
+    "h1:14fzDLcJk6+yij3Nm6wYg7bJuC/7tBIeBdrRhdP6k5o=",
+    "h1:D4Jzf2yKfuTdEBd+Gff+8hn9wYj1WplrMfwIk64YJpA=",
+    "h1:JKvPgzUHXR23KYODe7lccX0TzvJlYkIseS1t7EprvI0=",
+    "h1:S+b6k4m/We6PFfzkfbJlovubW4Ae9J+VQzYhWktbmi8=",
+    "h1:Um/8CwmobZ4SA9xhI7c8mg6pFF69yMFjAn5jRsEKSY8=",
+    "h1:WYymVvzI/OgLBYug28emu9uhUVh6vGUAZL0TQIM1feU=",
+    "h1:b3Kn3HO7nhKzKI15pPSZSncx+/hcCA5F82OkgSHsbBU=",
+    "h1:bPhfhhSKZuAdGJqy1hv4sp8cCiETQ1rSyUdMQooc52E=",
+    "h1:bq9Kc+7VevGcZhC2qEfEdFmuKEN2eFFjZBGCfhrMQsY=",
+    "h1:cs3Nj5n7YjF18sHr8tWqvrKO84pkrelsRPWBaAR4Dns=",
     "h1:gVHQcxZG6SDx+FHaDTQttv/qD3Z9yz/HbZ4hRwFCuME=",
+    "h1:uo3McAmFBPtEUiKJl+EuSzvATKvowwj6WVWm7NtjKMg=",
+    "h1:vPnMTJX6xievZEtBDBakkoMfOrwAIsVdKst8qtpLbr4=",
+    "h1:z1foid85kDZz9SWNn4rka+A+KKl9xrhafq5cNigPD/0=",
     "zh:1f7ee0204f0ce2aec341ab08e75fd37ca5b8d20cf76cacd0eec9b0f88db1728d",
     "zh:379c7e60c0769f795f815bd1251407435b1ec43b19d45fd98df5cc29ab67e160",
     "zh:678f5410a2ae71efeaa132407d10785456b9833e95129ffdf4dc8e2023bed282",
