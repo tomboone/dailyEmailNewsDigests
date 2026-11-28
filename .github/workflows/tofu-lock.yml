@@ -31,7 +31,7 @@ jobs:
       # On a run Dependabot triggered, secrets come from the Dependabot store, so the key has to be
       # there as well as in the Actions store (where the app's own push finds it).
       - id: app
-        uses: actions/create-github-app-token@v3.3.0
+        uses: actions/create-github-app-token@v3.4.0
         with:
           client-id: Iv23li9H17twmhg3CZou # the automation app, as in dependency-branch.yml. Public.
           private-key: ${{ secrets.AUTOMATION_APP_PRIVATE_KEY }}
